@@ -1,122 +1,142 @@
-# TaskFlow (практическое задание № 10)
+# TaskFlow — Clean Architecture (СРС 11)
 
-Мобильное приложение на Flutter для управления проектами и задачами. Все данные хранятся локально
-в **SQLite через Drift**, приложение полностью работает офлайн.
-Дизайн: синий `#007ea7`, розовый `#df1778` и белый.
+Рефакторинг приложения **TaskFlow** (лабораторная № 10: проекты, задачи, SQLite/Drift)
+по принципам **Clean Architecture**. Новое приложение не создавалось — переработан существующий проект.
+
+Стек: Flutter · **flutter_bloc (Cubit)** · **get_it** (DI) · **fpdart** (`Either<Failure, T>`) ·
+Drift/SQLite · Dio (сервер) · SharedPreferences. Тема: чёрный фон и красные акценты.
 
 ## Запуск
 
 ```bash
 flutter pub get
-dart run build_runner build   # генерирует app_database.g.dart
+dart run build_runner build
 flutter run
-flutter test                  # 25 тестов на настоящей SQLite в памяти
+flutter test
 ```
 
-При первом запуске можно создать пользователя или нажать «Заполнить демо-данными».
-Большая тестовая база: меню ⋮ → «Производительность».
-
-## Архитектура
+## Структура
 
 ```
 lib/
-├── database/      Database: таблицы Drift, индексы, миграции (app_database.dart, tables.dart)
-├── models/        Model: enum-ы, модели экранов, ошибки бизнес-правил
-├── repositories/  Repository: вся работа с БД (SQL только здесь)
-├── state/         State management: AppState (текущий пользователь), TaskListController (фильтры, пагинация)
-├── presentation/  Presentation: тема, экраны, виджеты
+├── components/           общие виджеты (карточка задачи, аватар, пустое состояние…)
+├── constants/            тема и цвета (app_theme.dart)
+├── models/               DTO сервера (RemoteUserModel, RemoteTodoModel)
+├── core/
+│   ├── rest_client/      единый HTTP-клиент на Dio, ошибки Dio → исключения Data
+│   ├── database/         таблицы Drift и миграции SQLite
+│   ├── error/            Failure, исключения Data Layer, ErrorHandler
+│   ├── usecase/          базовые UseCase / StreamUseCase
+│   └── di/               GetIt: configureDependencies()
+├── src/
+│   ├── data/
+│   │   ├── datasources/  Local (SQLite) и Remote (сервер) источники данных
+│   │   ├── mapper/       строки БД → сущности Domain
+│   │   └── repositories/ реализации репозиториев (…RepositoryImpl)
+│   ├── domain/
+│   │   ├── entities/     User, Project, Task, Comment, HistoryEntry…
+│   │   ├── repositories/ абстрактные репозитории (interface)
+│   │   └── usecases/     бизнес-действия + валидация
+│   └── presentation/
+│       ├── pages/        экраны
+│       ├── widgets/      список задач, выбор пользователя, ViewStateView
+│       └── bloc/         Cubit-ы и состояния
 └── main.dart
 ```
 
-Виджеты не выполняют SQL: они получают данные только из репозиториев (через Provider).
+**Направление зависимостей — внутрь:** `presentation → domain ← data`.
+Domain не знает ни о Flutter, ни о Drift, ни о Dio — это проверяют тесты 30–31.
 
-## База данных
+```
+Page ──► Cubit ──► UseCase ──► Repository (abstract, Domain)
+                                     ▲
+                       RepositoryImpl (Data) ──► DataSource ──► SQLite / сервер
+```
 
-| Таблица | Назначение | Связи |
+## Domain Layer
+
+Для каждой функциональности: **Entity → абстрактный Repository → UseCase**.
+Вся бизнес-логика перенесена из репозиториев в UseCase-ы, например:
+
+```dart
+class CreateUserUseCase implements UseCase<int, ({String name, String email})> {
+  Future<Either<Failure, int>> call(p) => eitherDo(($) async {
+    final name = await $(Validators.text(p.name, 'Имя'));
+    final email = await $(Validators.email(p.email));
+    if (await $(_repo.emailExists(email))) fail(const DuplicateEmailFailure());
+    return $(_repo.createUser(name: name, email: email));
+  });
+}
+```
+
+Правила в Domain: уникальный email; нельзя удалить пользователя с незавершёнными задачами;
+исполнитель — только участник проекта; не больше 3 задач на один дедлайн; комментарий удаляет
+только автор; нельзя создать задачу без проекта; Undo статуса.
+
+## Data Layer
+
+- **DataSource**: 8 локальных (SQLite через Drift) + `ImportRemoteDataSource` (сервер через RestClient).
+- **DTO/Models**: строки Drift (`UserRow`, `TaskRow`…) и модели API (`RemoteUserModel`, `RemoteTodoModel`).
+- **Mapper**: `row.toEntity()` — в Presentation попадают только сущности Domain.
+- **RepositoryImpl**: вызывает DataSource и через `ErrorHandler.guard` превращает исключения в `Failure`.
+- Транзакции (задача + история, переназначение, Undo) остаются в DataSource.
+
+## Обработка ошибок (централизованно)
+
+| Ситуация | Исключение Data | Failure |
 |---|---|---|
-| `users` | пользователи | `email` UNIQUE |
-| `projects` | проекты | статус: active / completed / archived |
-| `project_members` | участники проектов | Many-to-Many users ↔ projects, PK (project_id, user_id), роль Owner/Admin/Member |
-| `tasks` | задачи | One-to-Many: проект → задачи (CASCADE), исполнитель → задачи (SET NULL) |
-| `comments` | комментарии | задача → комментарии (CASCADE) |
-| `attachments` | вложения (хранится **путь** к файлу) | задача → вложения (CASCADE) |
-| `task_history` | история изменений | задача → история (CASCADE) |
+| Нет интернета, таймаут | `NetworkException` | `NetworkFailure` |
+| HTTP 500 | `ServerException` | `ServerFailure` |
+| HTTP 401 | `UnauthorizedException` | `UnauthorizedFailure` |
+| HTTP 400 | `BadRequestException` | `ValidationFailure` |
+| Некорректный JSON | `ParseException` | `ServerFailure` |
+| Ошибка SQLite | `SqliteException` | `DatabaseFailure` / `ValidationFailure` |
+| Нарушение бизнес-правила | — | подвиды `ValidationFailure` |
+| Пустой результат | — | состояние **Empty** |
+| Всё остальное | — | `UnknownFailure` |
 
-- Внешние ключи включаются в `beforeOpen` (`PRAGMA foreign_keys = ON`).
-- Индексы: `tasks(project_id, assignee_id, status, priority, deadline, created_at, title, deleted_at)`,
-  `comments(task_id)`, `attachments(task_id)`, `task_history(task_id)`, `project_members(user_id)`, `users(name)`.
-- Перед сохранением данные проверяются (`Validators`): обязательные поля, длина, формат email.
+`RestClient` переводит ошибки Dio в исключения Data Layer, `ErrorHandler` переводит их в `Failure`.
+Пользователь видит только понятный текст (`failure.message`), технические детали пишутся в лог.
 
-## Бизнес-правила
+## Presentation Layer
 
-- Email уникален; нельзя удалить пользователя с незавершёнными задачами.
-- Исполнитель — только участник проекта; нельзя дважды добавить пользователя в проект.
-- Нельзя создать задачу без проекта и прокомментировать несуществующую задачу.
-- Удалить комментарий может только его автор.
-- **Лимит:** не больше 3 незавершённых задач у исполнителя с одним дедлайном (проверка запросом `COUNT`).
+- Экраны не делают запросов и не содержат бизнес-логики: только `Cubit`.
+- Состояния `ViewInitial / ViewLoading / ViewLoaded / ViewEmpty / ViewError` + единый виджет `ViewStateView` с кнопкой **«Повторить»**.
+- Без лишних запросов: поиск с debounce 300 мс, защита от повторной подгрузки страницы и от двойного нажатия «Сохранить» / «Загрузить».
 
-## Транзакции
+## Dependency Injection (GetIt)
 
-- Создание задачи и первая запись истории выполняются в одной транзакции (`TaskRepository.createTask`).
-  Если история не сохранилась, задача тоже не сохраняется (тест 12).
-- Переназначение исполнителя: проверка участия, проверка лимита, изменение и запись в историю атомарно.
-- Смена статуса и Undo тоже выполняются в транзакции вместе с записью истории.
+`core/di/injection.dart` → `configureDependencies()`. Порядок регистрации:
+**внешние сервисы → DataSource → Repository → UseCase → Cubit**.
+Экраны получают Cubit через `getIt<…>()`, Cubit-ы получают только UseCase-ы.
+Тесты используют тот же DI, подменяя базу (SQLite в памяти) и сервер (поддельный адаптер Dio).
 
-## Миграция v1 → v2
+## Новая функция: «Импорт с сервера»
 
-`schemaVersion = 2`. В v1 у `tasks` не было поля `priority`. `onUpgrade` добавляет столбец
-со значением по умолчанию `medium` и создаёт индекс. Тест `migration_test.dart` создаёт базу
-«версии 1» с данными, открывает её приложением и проверяет, что записи сохранились, а `priority = medium`.
+Меню ⋮ → **Импорт с сервера**. Загружает пользователей (`GET /users`) и задачи (`GET /todos`)
+с JSONPlaceholder, создаёт новый проект и сохраняет всё в SQLite одной транзакцией
+(пользователи с существующим email не дублируются).
 
-## Реактивность
+Сделано по Clean Architecture: `ImportPage → ImportCubit → ImportFromServerUseCase →
+ImportRepository → ImportRemoteDataSource + ImportLocalDataSource`.
+Состояния: Initial, Loading, Success, **Empty**, **Error** с кнопкой
+**повторной отправки неудачного запроса**.
 
-Все экраны используют `watch()` Drift: списки, карточка задачи, история, комментарии и Dashboard
-обновляются сами после любого изменения в базе.
+## Тесты — 32, все проходят
 
-## Dashboard
-
-Все показатели считаются SQL-запросами (`StatsRepository`): число проектов и задач, завершённые,
-незавершённые и просроченные задачи, задачи по приоритетам и исполнителям, процент выполнения проектов.
-
-## Производительность
-
-Экран «Производительность» генерирует **1 000 пользователей, 100 проектов и 10 000 задач**,
-затем выполняет одни и те же запросы с индексами и без них (индексы временно удаляются)
-и показывает среднее время. Списки задач и пользователей подгружаются страницами (`LIMIT`).
-
-## Задания повышенной сложности
-
-1. **Корзина (Soft Delete):** поле `deletedAt`; меню ⋮ → «Корзина»: восстановить или удалить навсегда.
-2. **Undo:** кнопка «Отменить» в уведомлении после смены статуса и «Отменить последнее изменение статуса» в задаче.
-3. **Лимит 3 задач на дедлайн:** `TaskRepository._ensureCapacity`.
-4. **Целостность данных:** см. «Бизнес-правила».
-
-## Тесты (25, все проходят)
-
-| Требование | Тесты |
+| Файл | Что проверяет |
 |---|---|
-| Создание и удаление пользователей | 1, 3, 4 |
-| Уникальность email | 2 |
-| Создание проектов | 5, 7 |
-| Добавление участников | 6 |
-| Создание задач, целостность | 8, 9 |
-| Проверка исполнителя | 10 |
-| Изменение статуса и история | 11 |
-| Транзакции | 12 |
-| Undo, лимит задач | 13, 14 |
-| Soft Delete и восстановление | 15, 16 |
-| Комментарии, вложения | 17, 18 |
-| Фильтрация, поиск, сортировка, пагинация | 19 |
-| Реактивность watch() | 20 |
-| Статистика | 21 |
-| Миграции | 22 |
+| `domain_test.dart` (1–18) | правила UseCase-ов: email, удаление, участники, транзакция, Undo, лимит, корзина, комментарии, поиск/фильтры/пагинация, статистика |
+| `import_test.dart` (19–29) | импорт, NetworkFailure, 500, 401, 400, плохой JSON, Empty, Cubit: Loading→Success, повтор, защита от двойного запроса |
+| `architecture_test.dart` (30–31) | Domain без Flutter/Drift/Dio; Presentation без базы и Dio |
+| `migration_test.dart` | миграция БД v1 → v2 |
 
 ## Скриншоты
 
-| Приветствие | Обзор | Проекты |
+| Обзор | Задачи | Задача |
 |---|---|---|
-| ![](docs/screenshots/01_welcome.png) | ![](docs/screenshots/02_dashboard.png) | ![](docs/screenshots/03_projects.png) |
+| ![](docs/screenshots/01_dashboard.png) | ![](docs/screenshots/02_tasks.png) | ![](docs/screenshots/03_task_detail.png) |
 
-| Задачи | Задача | История |
-|---|---|---|
-| ![](docs/screenshots/04_tasks.png) | ![](docs/screenshots/05_task_detail.png) | ![](docs/screenshots/06_history.png) |
+| Импорт: успех | Импорт: нет интернета |
+|---|---|
+| ![](docs/screenshots/04_import_success.png) | ![](docs/screenshots/05_import_network_error.png) |

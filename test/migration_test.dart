@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lab10/database/app_database.dart';
-import 'package:lab10/models/enums.dart';
+import 'package:lab11/core/database/app_database.dart';
+import 'package:lab11/src/domain/entities/enums.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 void main() {

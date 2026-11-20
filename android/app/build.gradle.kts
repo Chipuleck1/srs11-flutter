@@ -15,7 +15,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.natali.lab7"
+        applicationId = "com.natali.lab11"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

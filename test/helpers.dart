@@ -1,74 +1,133 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
 import 'package:drift/native.dart';
-import 'package:lab10/database/app_database.dart';
-import 'package:lab10/models/enums.dart';
-import 'package:lab10/models/view_models.dart';
-import 'package:lab10/repositories/comment_repository.dart';
-import 'package:lab10/repositories/project_repository.dart';
-import 'package:lab10/repositories/stats_repository.dart';
-import 'package:lab10/repositories/task_repository.dart';
-import 'package:lab10/repositories/user_repository.dart';
+import 'package:fpdart/fpdart.dart' hide Task;
+import 'package:lab11/core/database/app_database.dart';
+import 'package:lab11/core/di/injection.dart';
+import 'package:lab11/core/error/failures.dart';
+import 'package:lab11/src/domain/entities/entities.dart';
+import 'package:lab11/src/domain/repositories/task_repository.dart';
+import 'package:lab11/src/domain/usecases/project_usecases.dart';
+import 'package:lab11/src/domain/usecases/task_usecases.dart';
+import 'package:lab11/src/domain/usecases/user_usecases.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-/// Настоящая база SQLite в памяти + все репозитории.
-class TestEnv {
-  TestEnv()
-    : db = AppDatabase(NativeDatabase.memory(setup: registerSqlFunctions)) {
-    users = UserRepository(db);
-    projects = ProjectRepository(db);
-    tasks = TaskRepository(db);
-    comments = CommentRepository(db);
-    stats = StatsRepository(db);
-  }
+/// Ответ поддельного сервера: JSON или сетевая ошибка.
+class FakeServer implements HttpClientAdapter {
+  Object? Function(RequestOptions o) handler = (_) => [];
+  int status = 200;
+  bool offline = false;
+  final requests = <RequestOptions>[];
 
-  final AppDatabase db;
-  late final UserRepository users;
-  late final ProjectRepository projects;
-  late final TaskRepository tasks;
-  late final CommentRepository comments;
-  late final StatsRepository stats;
-
-  int _n = 0;
-
-  Future<int> user([String name = 'Анна']) =>
-      users.createUser(name: name, email: 'user${_n++}@test.kz');
-
-  /// Проект с участниками [memberIds].
-  Future<int> project(List<int> memberIds, {String name = 'Проект'}) async {
-    final id = await projects.createProject(name: name);
-    for (final m in memberIds) {
-      await projects.addMember(id, m, MemberRole.member);
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions o,
+    Stream<Uint8List>? body,
+    Future<void>? cancel,
+  ) async {
+    requests.add(o);
+    if (offline) {
+      throw DioException(
+        requestOptions: o,
+        type: DioExceptionType.connectionError,
+      );
     }
-    return id;
+    return ResponseBody.fromString(
+      jsonEncode(handler(o)),
+      status,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
   }
 
-  Future<int> task(
-    int projectId, {
-    String title = 'Задача',
-    String description = '',
-    int? assigneeId,
-    int? actorId,
-    TaskPriority priority = TaskPriority.medium,
-    TaskStatus status = TaskStatus.todo,
-    DateTime? deadline,
-  }) => tasks.createTask(
-    TaskDraft(
-      projectId: projectId,
-      title: title,
-      description: description,
-      assigneeId: assigneeId,
-      priority: priority,
-      status: status,
-      deadline: deadline,
-    ),
-    actorId: actorId,
-  );
-
-  Future<int> rawCount(String table) async =>
-      (await db.customSelect('SELECT COUNT(*) AS c FROM $table').getSingle())
-          .read<int>('c');
-
-  Future<void> close() => db.close();
+  @override
+  void close({bool force = false}) {}
 }
 
-/// Для удобства чтения ожиданий.
-Future<Task> readTask(TestEnv env, int id) async =>
-    (await env.tasks.getTask(id))!;
+/// Полный DI приложения, но база SQLite — в памяти, сервер — поддельный.
+Future<FakeServer> setUpApp() async {
+  await getIt.reset();
+  SharedPreferences.setMockInitialValues({});
+  final server = FakeServer();
+  await configureDependencies(
+    executor: NativeDatabase.memory(setup: registerSqlFunctions),
+    prefs: await SharedPreferences.getInstance(),
+    httpAdapter: server,
+  );
+  return server;
+}
+
+Future<void> tearDownApp() => getIt.reset();
+
+/// Значение Right или падение теста.
+T right<T>(Either<Failure, T> e) =>
+    e.getOrElse((f) => throw StateError('Ожидался успех, а пришло: $f'));
+
+/// Failure из Left или падение теста.
+Failure left<T>(Either<Failure, T> e) =>
+    e.getLeft().getOrElse(() => throw StateError('Ожидалась ошибка'));
+
+int _n = 0;
+
+Future<int> newUser([String name = 'Анна']) async => right(
+  await getIt<CreateUserUseCase>()((name: name, email: 'user${_n++}@test.kz')),
+);
+
+Future<int> newProject(List<int> members, {String name = 'Проект'}) async {
+  final id = right(
+    await getIt<CreateProjectUseCase>()((
+      data: (
+        name: name,
+        description: '',
+        status: ProjectStatus.active,
+        endDate: null,
+      ),
+      ownerId: null,
+    )),
+  );
+  for (final m in members) {
+    right(
+      await getIt<AddMemberUseCase>()((
+        projectId: id,
+        userId: m,
+        role: MemberRole.member,
+      )),
+    );
+  }
+  return id;
+}
+
+Future<Either<Failure, int>> createTask(
+  int? projectId, {
+  String title = 'Задача',
+  String description = '',
+  int? assigneeId,
+  int? actorId,
+  TaskPriority priority = TaskPriority.medium,
+  TaskStatus status = TaskStatus.todo,
+  DateTime? deadline,
+}) => getIt<CreateTaskUseCase>()((
+  draft: TaskDraft(
+    projectId: projectId,
+    title: title,
+    description: description,
+    assigneeId: assigneeId,
+    priority: priority,
+    status: status,
+    deadline: deadline,
+  ),
+  actorId: actorId,
+));
+
+Future<int> count(String table) async =>
+    (await getIt<AppDatabase>()
+            .customSelect('SELECT COUNT(*) AS c FROM $table')
+            .getSingle())
+        .read<int>('c');
+
+/// Задача из базы (в том числе из корзины).
+Future<Task> task(int id) async =>
+    right(await getIt<TaskRepository>().getTask(id))!;
