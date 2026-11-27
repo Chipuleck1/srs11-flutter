@@ -1,12 +1,12 @@
 import 'package:get_it/get_it.dart';
 
-import 'package:lab11/src/data/datasources/users/user_local_data_source.dart';
-import 'package:lab11/src/data/repositories/users/user_repository_impl.dart';
-import 'package:lab11/src/domain/repositories/users/user_repository.dart';
-import 'package:lab11/src/domain/usecases/users/user_usecases.dart';
-import 'package:lab11/src/presentation/bloc/users/user_detail_cubit.dart';
-import 'package:lab11/src/presentation/bloc/users/user_picker_cubit.dart';
-import 'package:lab11/src/presentation/bloc/users/users_cubit.dart';
+import 'package:lab11/src/data/users/datasources/user_local_data_source.dart';
+import 'package:lab11/src/data/users/repositories/user_repository_impl.dart';
+import 'package:lab11/src/domain/users/repositories/user_repository.dart';
+import 'package:lab11/src/domain/users/usecases/user_usecases.dart';
+import 'package:lab11/src/presentation/users/bloc/user_detail_cubit.dart';
+import 'package:lab11/src/presentation/users/bloc/user_picker_cubit.dart';
+import 'package:lab11/src/presentation/users/bloc/users_cubit.dart';
 
 /// Фича «Пользователи»: DataSource → Repository → UseCase → Cubit.
 void registerUsersFeature(GetIt getIt) {

@@ -1,12 +1,12 @@
 import 'package:get_it/get_it.dart';
 
-import 'package:lab11/src/data/datasources/projects/project_local_data_source.dart';
-import 'package:lab11/src/data/repositories/projects/project_repository_impl.dart';
-import 'package:lab11/src/domain/repositories/projects/project_repository.dart';
-import 'package:lab11/src/domain/usecases/projects/project_usecases.dart';
-import 'package:lab11/src/presentation/bloc/projects/members_cubit.dart';
-import 'package:lab11/src/presentation/bloc/projects/project_detail_cubit.dart';
-import 'package:lab11/src/presentation/bloc/projects/projects_cubit.dart';
+import 'package:lab11/src/data/projects/datasources/project_local_data_source.dart';
+import 'package:lab11/src/data/projects/repositories/project_repository_impl.dart';
+import 'package:lab11/src/domain/projects/repositories/project_repository.dart';
+import 'package:lab11/src/domain/projects/usecases/project_usecases.dart';
+import 'package:lab11/src/presentation/projects/bloc/members_cubit.dart';
+import 'package:lab11/src/presentation/projects/bloc/project_detail_cubit.dart';
+import 'package:lab11/src/presentation/projects/bloc/projects_cubit.dart';
 
 /// Фича «Проекты» и участники проектов.
 void registerProjectsFeature(GetIt getIt) {

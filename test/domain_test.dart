@@ -4,13 +4,13 @@ import 'package:lab11/core/di/injection.dart';
 import 'package:lab11/core/error/failures.dart';
 import 'package:lab11/core/usecase/usecase.dart';
 import 'package:lab11/models/enums.dart';
-import 'package:lab11/src/domain/usecases/dashboard/watch_dashboard_usecase.dart';
-import 'package:lab11/src/domain/usecases/projects/project_usecases.dart';
-import 'package:lab11/src/domain/entities/tasks/task.dart';
-import 'package:lab11/src/domain/usecases/tasks/comment_usecases.dart';
-import 'package:lab11/src/domain/usecases/tasks/task_usecases.dart';
-import 'package:lab11/src/domain/usecases/trash/trash_usecases.dart';
-import 'package:lab11/src/domain/usecases/users/user_usecases.dart';
+import 'package:lab11/src/domain/dashboard/usecases/watch_dashboard_usecase.dart';
+import 'package:lab11/src/domain/projects/usecases/project_usecases.dart';
+import 'package:lab11/src/domain/tasks/entities/task.dart';
+import 'package:lab11/src/domain/tasks/usecases/comment_usecases.dart';
+import 'package:lab11/src/domain/tasks/usecases/task_usecases.dart';
+import 'package:lab11/src/domain/trash/usecases/trash_usecases.dart';
+import 'package:lab11/src/domain/users/usecases/user_usecases.dart';
 
 import 'helpers.dart';
 
@@ -255,8 +255,7 @@ void main() {
       expect(
         right(await getIt<WatchTrashUseCase>()(const NoParams()).first)
             .single
-            .task
-            .id,
+            .taskId,
         id,
       );
       expect(

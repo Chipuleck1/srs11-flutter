@@ -1,17 +1,17 @@
 import 'package:get_it/get_it.dart';
 
-import 'package:lab11/src/data/datasources/tasks/comment_local_data_source.dart';
-import 'package:lab11/src/data/datasources/tasks/task_local_data_source.dart';
-import 'package:lab11/src/data/repositories/tasks/comment_repository_impl.dart';
-import 'package:lab11/src/data/repositories/tasks/task_repository_impl.dart';
-import 'package:lab11/src/domain/repositories/tasks/comment_repository.dart';
-import 'package:lab11/src/domain/repositories/tasks/task_repository.dart';
-import 'package:lab11/src/domain/usecases/tasks/comment_usecases.dart';
-import 'package:lab11/src/domain/usecases/tasks/task_usecases.dart';
-import 'package:lab11/src/presentation/bloc/tasks/comments_cubit.dart';
-import 'package:lab11/src/presentation/bloc/tasks/task_detail_cubit.dart';
-import 'package:lab11/src/presentation/bloc/tasks/task_form_cubit.dart';
-import 'package:lab11/src/presentation/bloc/tasks/task_list_cubit.dart';
+import 'package:lab11/src/data/tasks/datasources/comment_local_data_source.dart';
+import 'package:lab11/src/data/tasks/datasources/task_local_data_source.dart';
+import 'package:lab11/src/data/tasks/repositories/comment_repository_impl.dart';
+import 'package:lab11/src/data/tasks/repositories/task_repository_impl.dart';
+import 'package:lab11/src/domain/tasks/repositories/comment_repository.dart';
+import 'package:lab11/src/domain/tasks/repositories/task_repository.dart';
+import 'package:lab11/src/domain/tasks/usecases/comment_usecases.dart';
+import 'package:lab11/src/domain/tasks/usecases/task_usecases.dart';
+import 'package:lab11/src/presentation/tasks/bloc/comments_cubit.dart';
+import 'package:lab11/src/presentation/tasks/bloc/task_detail_cubit.dart';
+import 'package:lab11/src/presentation/tasks/bloc/task_form_cubit.dart';
+import 'package:lab11/src/presentation/tasks/bloc/task_list_cubit.dart';
 
 /// Фича «Задачи»: задачи, история, комментарии и вложения.
 void registerTasksFeature(GetIt getIt) {

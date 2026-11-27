@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Проверка правил Clean Architecture по импортам.
-/// Структура: lib/src/<слой>/<вид>/<страница>/…,
-/// например src/domain/usecases/tasks/task_usecases.dart.
+/// Структура: lib/src/<слой>/<страница>/<вид>/…,
+/// например src/domain/tasks/usecases/task_usecases.dart.
 void main() {
   /// (файл, строка import) для всех .dart-файлов слоя [layer].
   List<(String, String)> imports(String layer) => [
@@ -59,16 +59,16 @@ void main() {
   test('32. Data одной страницы не берёт data другой страницы', () {
     final bad = <(String, String)>[];
     for (final (file, line) in imports('data')) {
-      // lib/src/data/<вид>/<страница>/файл.dart
-      final own = file.split('lib/src/data/')[1].split('/')[1];
-      final m = RegExp(r'package:lab11/src/data/\w+/(\w+)/').firstMatch(line);
+      // lib/src/data/<страница>/<вид>/файл.dart
+      final own = file.split('lib/src/data/')[1].split('/').first;
+      final m = RegExp(r'package:lab11/src/data/(\w+)/').firstMatch(line);
       if (m != null && m.group(1) != own) bad.add((file, line));
     }
     expect(bad, isEmpty, reason: report(bad));
   });
 
-  test('33. У каждой страницы есть domain (usecases), data (repositories) и presentation (pages + bloc)', () {
-    final pages = Directory('lib/src/presentation/pages')
+  test('33. У каждой страницы свои entities, repositories, usecases, datasources, bloc и view', () {
+    final pages = Directory('lib/src/presentation')
         .listSync()
         .whereType<Directory>()
         .map((d) => d.path.replaceAll(r'\', '/').split('/').last)
@@ -76,17 +76,18 @@ void main() {
     expect(pages, isNotEmpty);
     for (final page in pages) {
       for (final dir in [
-        'domain/usecases',
-        'domain/repositories',
-        'data/repositories',
-        'data/datasources',
-        'presentation/pages',
-        'presentation/bloc',
+        'domain/$page/entities',
+        'domain/$page/repositories',
+        'domain/$page/usecases',
+        'data/$page/datasources',
+        'data/$page/repositories',
+        'presentation/$page/bloc',
+        'presentation/$page/view',
       ]) {
         expect(
-          Directory('lib/src/$dir/$page').existsSync(),
+          Directory('lib/src/$dir').existsSync(),
           isTrue,
-          reason: 'нет lib/src/$dir/$page',
+          reason: 'нет lib/src/$dir',
         );
       }
     }

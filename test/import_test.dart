@@ -2,8 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:lab11/core/di/injection.dart';
 import 'package:lab11/core/error/failures.dart';
-import 'package:lab11/src/domain/usecases/server_import/import_from_server_usecase.dart';
-import 'package:lab11/src/presentation/bloc/server_import/import_cubit.dart';
+import 'package:lab11/src/domain/server_import/usecases/import_from_server_usecase.dart';
+import 'package:lab11/src/presentation/server_import/bloc/import_cubit.dart';
 
 import 'helpers.dart';
 

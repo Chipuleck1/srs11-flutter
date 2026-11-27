@@ -1,10 +1,10 @@
 import 'package:get_it/get_it.dart';
 
-import 'package:lab11/src/data/datasources/trash/trash_local_data_source.dart';
-import 'package:lab11/src/data/repositories/trash/trash_repository_impl.dart';
-import 'package:lab11/src/domain/repositories/trash/trash_repository.dart';
-import 'package:lab11/src/domain/usecases/trash/trash_usecases.dart';
-import 'package:lab11/src/presentation/bloc/trash/trash_cubit.dart';
+import 'package:lab11/src/data/trash/datasources/trash_local_data_source.dart';
+import 'package:lab11/src/data/trash/repositories/trash_repository_impl.dart';
+import 'package:lab11/src/domain/trash/repositories/trash_repository.dart';
+import 'package:lab11/src/domain/trash/usecases/trash_usecases.dart';
+import 'package:lab11/src/presentation/trash/bloc/trash_cubit.dart';
 
 /// Фича «Корзина» (soft delete).
 void registerTrashFeature(GetIt getIt) {
