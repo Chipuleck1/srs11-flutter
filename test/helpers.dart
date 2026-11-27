@@ -10,11 +10,11 @@ import 'package:lab11/core/database/app_database.dart';
 import 'package:lab11/core/di/injection.dart';
 import 'package:lab11/core/error/failures.dart';
 import 'package:lab11/models/enums.dart';
-import 'package:lab11/src/projects/domain/usecases/project_usecases.dart';
-import 'package:lab11/src/tasks/domain/entities/task.dart';
-import 'package:lab11/src/tasks/domain/repositories/task_repository.dart';
-import 'package:lab11/src/tasks/domain/usecases/task_usecases.dart';
-import 'package:lab11/src/users/domain/usecases/user_usecases.dart';
+import 'package:lab11/src/domain/usecases/projects/project_usecases.dart';
+import 'package:lab11/src/domain/entities/tasks/task.dart';
+import 'package:lab11/src/domain/repositories/tasks/task_repository.dart';
+import 'package:lab11/src/domain/usecases/tasks/task_usecases.dart';
+import 'package:lab11/src/domain/usecases/users/user_usecases.dart';
 
 /// Ответ поддельного сервера: JSON или сетевая ошибка.
 class FakeServer implements HttpClientAdapter {

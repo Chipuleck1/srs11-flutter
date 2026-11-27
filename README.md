@@ -15,67 +15,54 @@ flutter run
 flutter test
 ```
 
-## Структура: каждая фича — в своей папке
+## Структура
 
-Проект организован **по фичам (feature-first)**: всё, что относится к одному разделу
-приложения (экран, его Cubit, UseCase-ы, репозиторий, источник данных), лежит в одной папке
-`lib/src/<фича>/`, и внутри неё — три слоя Clean Architecture.
+Структура точно как в задании (`src/data`, `src/domain`, `src/presentation` с их папками),
+а **внутри каждой папки — отдельная подпапка на каждую страницу**.
+Всё, что относится к странице (entity, репозиторий, usecase, datasource, cubit, экран),
+лежит в подпапках с её именем.
 
 ```
 lib/
-├── components/              общие виджеты (аватар, пустое состояние, ViewStateView…)
-├── constants/               тема и цвета (app_theme.dart)
-├── models/                  общие enum-ы (статусы, приоритеты, роли)
-├── core/                    общее ядро для всех фич
-│   ├── rest_client/         единый HTTP-клиент (Dio) → исключения Data
-│   ├── database/            таблицы Drift и миграции SQLite
-│   ├── error/               Failure, исключения, ErrorHandler
-│   ├── usecase/             базовые UseCase / StreamUseCase
-│   ├── bloc/                базовый WatchCubit и состояния ViewState
-│   ├── validation/          правила проверки ввода
-│   └── di/injection.dart    configureDependencies() — вызывает регистрацию каждой фичи
+├── components/                общие виджеты (аватар, пустое состояние, ViewStateView…)
+├── constants/                 тема и цвета
+├── models/                    enum-ы и DTO сервера (models/server_import/)
+├── core/
+│   ├── rest_client/           HTTP-клиент (Dio) → исключения Data
+│   ├── database/              таблицы Drift, миграции
+│   ├── error/                 Failure, исключения, ErrorHandler
+│   ├── usecase/  bloc/  validation/
+│   └── di/                    injection.dart + <страница>_di.dart для каждой страницы
 ├── src/
-│   ├── home/                главный экран, приветствие, текущий пользователь, демо-данные
-│   ├── dashboard/           статистика
-│   ├── projects/            проекты и участники
-│   ├── tasks/               задачи, история, комментарии, вложения
-│   ├── users/               пользователи
-│   ├── trash/               корзина (soft delete)
-│   ├── performance/         1000/100/10000 записей и сравнение индексов
-│   └── server_import/       НОВАЯ ФУНКЦИЯ: импорт с сервера
+│   ├── data/
+│   │   ├── datasources/       home/ dashboard/ projects/ tasks/ users/ trash/ performance/ server_import/
+│   │   ├── mapper/            projects/ tasks/ users/
+│   │   └── repositories/      home/ dashboard/ projects/ tasks/ users/ trash/ performance/ server_import/
+│   ├── domain/
+│   │   ├── entities/          dashboard/ projects/ tasks/ users/ performance/ server_import/
+│   │   ├── repositories/      home/ dashboard/ projects/ tasks/ users/ trash/ performance/ server_import/
+│   │   └── usecases/          home/ dashboard/ projects/ tasks/ users/ trash/ performance/ server_import/
+│   └── presentation/
+│       ├── pages/             home/ dashboard/ projects/ tasks/ users/ trash/ performance/ server_import/
+│       ├── widgets/           tasks/ users/
+│       └── bloc/              home/ dashboard/ projects/ tasks/ users/ trash/ performance/ server_import/
 └── main.dart
 ```
 
-Каждая фича устроена одинаково (пример — `src/home/`):
+Пример — всё, что относится к странице **Корзина** (`trash`):
 
-```
-src/home/
-├── data/
-│   ├── datasources/         session_local_data_source.dart, demo_seed_local_data_source.dart
-│   └── repositories/        session_repository_impl.dart, demo_seed_repository_impl.dart
-├── domain/
-│   ├── repositories/        session_repository.dart, demo_seed_repository.dart (abstract)
-│   └── usecases/            session_usecases.dart, seed_demo_data_usecase.dart
-├── presentation/
-│   ├── bloc/                current_user_cubit.dart, welcome_cubit.dart
-│   └── pages/               home_page.dart, welcome_page.dart
-└── home_di.dart             регистрация зависимостей фичи в GetIt
-```
+| Слой | Файл |
+|---|---|
+| domain/repositories | `src/domain/repositories/trash/trash_repository.dart` |
+| domain/usecases | `src/domain/usecases/trash/trash_usecases.dart` |
+| data/datasources | `src/data/datasources/trash/trash_local_data_source.dart` |
+| data/repositories | `src/data/repositories/trash/trash_repository_impl.dart` |
+| presentation/bloc | `src/presentation/bloc/trash/trash_cubit.dart` |
+| presentation/pages | `src/presentation/pages/trash/trash_page.dart` |
+| DI | `core/di/trash_di.dart` |
 
-| Фича | data | domain | presentation |
-|---|---|---|---|
-| home | сессия, демо-данные | Session/DemoSeed Repository, UseCase-ы | HomePage, WelcomePage, CurrentUserCubit, WelcomeCubit |
-| dashboard | SQL-статистика | DashboardStats, StatsRepository, WatchDashboard | DashboardPage, DashboardCubit |
-| projects | проекты, участники | Project, ProjectRepository, 12 UseCase-ов | ProjectsPage, ProjectDetailPage, 3 Cubit-а |
-| tasks | задачи, история, комментарии | Task, Comment, 2 репозитория, 18 UseCase-ов | TasksPage, TaskDetailPage, TaskFormPage, 4 Cubit-а |
-| users | пользователи | User, UserRepository, 6 UseCase-ов | UsersPage, UserDetailPage, UserPicker, 3 Cubit-а |
-| trash | удалённые задачи | TrashRepository, 4 UseCase-а | TrashPage, TrashCubit |
-| performance | генерация, бенчмарк | BenchmarkResult, PerformanceRepository | PerformancePage, PerformanceCubit |
-| server_import | Remote + Local DataSource, DTO | ImportResult, ImportRepository | ImportPage, ImportCubit |
-
-**Направление зависимостей — внутрь:** `presentation → domain ← data` внутри каждой фичи.
-Фичи могут использовать **domain** друг друга (например, задачам нужен `ProjectRepository`),
-но никогда — чужие `data`. Это проверяют тесты 30–33.
+**Направление зависимостей — внутрь:** `presentation → domain ← data`.
+Data одной страницы не обращается к data другой страницы — это проверяют тесты 30–33.
 
 ```
 Page ──► Cubit ──► UseCase ──► Repository (abstract, domain)
@@ -136,11 +123,9 @@ class CreateUserUseCase implements UseCase<int, ({String name, String email})> {
 
 ## Dependency Injection (GetIt)
 
-У каждой фичи свой файл регистрации: `src/<фича>/<фича>_di.dart`
-(например, `registerHomeFeature(getIt)`), где по порядку регистрируются
-**DataSource → Repository → UseCase → Cubit** этой фичи.
 `core/di/injection.dart` регистрирует общие сервисы (база, HTTP, настройки) и вызывает
-регистрацию фич: users → projects → tasks → trash → dashboard → performance → server_import → home.
+регистрацию каждой страницы из своего файла: `core/di/home_di.dart`, `core/di/tasks_di.dart` и т.д.
+В каждом таком файле по порядку: **DataSource → Repository → UseCase → Cubit**.
 Экраны получают Cubit через `getIt<…>()`, Cubit-ы получают только UseCase-ы.
 Тесты используют тот же DI, подменяя базу (SQLite в памяти) и сервер (поддельный адаптер Dio).
 
@@ -161,7 +146,7 @@ ImportRepository → ImportRemoteDataSource + ImportLocalDataSource`.
 |---|---|
 | `domain_test.dart` (1–18) | правила UseCase-ов: email, удаление, участники, транзакция, Undo, лимит, корзина, комментарии, поиск/фильтры/пагинация, статистика |
 | `import_test.dart` (19–29) | импорт, NetworkFailure, 500, 401, 400, плохой JSON, Empty, Cubit: Loading→Success, повтор, защита от двойного запроса |
-| `architecture_test.dart` (30–33) | в каждой фиче: domain без Flutter/Drift/Dio; presentation без базы и Dio; data не лезет в чужие фичи; у каждой фичи есть data/domain/presentation |
+| `architecture_test.dart` (30–33) | domain без Flutter/Drift/Dio; presentation без базы и Dio; data одной страницы не берёт data другой; у каждой страницы есть свои папки во всех слоях |
 | `migration_test.dart` | миграция БД v1 → v2 |
 
 ## Скриншоты

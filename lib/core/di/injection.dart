@@ -5,14 +5,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:lab11/core/database/app_database.dart';
 import 'package:lab11/core/rest_client/rest_client.dart';
-import 'package:lab11/src/dashboard/dashboard_di.dart';
-import 'package:lab11/src/home/home_di.dart';
-import 'package:lab11/src/performance/performance_di.dart';
-import 'package:lab11/src/projects/projects_di.dart';
-import 'package:lab11/src/server_import/server_import_di.dart';
-import 'package:lab11/src/tasks/tasks_di.dart';
-import 'package:lab11/src/trash/trash_di.dart';
-import 'package:lab11/src/users/users_di.dart';
+import 'package:lab11/core/di/dashboard_di.dart';
+import 'package:lab11/core/di/home_di.dart';
+import 'package:lab11/core/di/performance_di.dart';
+import 'package:lab11/core/di/projects_di.dart';
+import 'package:lab11/core/di/server_import_di.dart';
+import 'package:lab11/core/di/tasks_di.dart';
+import 'package:lab11/core/di/trash_di.dart';
+import 'package:lab11/core/di/users_di.dart';
 
 final getIt = GetIt.instance;
 
