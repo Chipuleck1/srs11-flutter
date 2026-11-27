@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart' hide Task;
 import 'package:sqlite3/common.dart' show SqliteException;
 
-import 'exceptions.dart';
-import 'failures.dart';
+import 'package:lab11/core/error/exceptions.dart';
+import 'package:lab11/core/error/failures.dart';
 
 /// Централизованная обработка ошибок Data Layer.
 /// Любое исключение превращается в понятный [Failure],

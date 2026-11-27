@@ -2,10 +2,10 @@ import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:sqlite3/common.dart';
 
-import '../../src/domain/entities/enums.dart';
-import 'tables.dart';
+import 'package:lab11/core/database/tables.dart';
+import 'package:lab11/models/enums.dart';
 
-export 'tables.dart';
+export 'package:lab11/core/database/tables.dart';
 
 part 'app_database.g.dart';
 

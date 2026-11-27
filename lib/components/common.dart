@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../constants/app_theme.dart';
-import '../core/error/failures.dart';
-import '../src/domain/entities/enums.dart';
+import 'package:lab11/constants/app_theme.dart';
+import 'package:lab11/core/error/failures.dart';
+import 'package:lab11/models/enums.dart';
 
 /// Экран с градиентной шапкой.
 class GradientScaffold extends StatelessWidget {

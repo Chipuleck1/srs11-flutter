@@ -1,9 +1,9 @@
-import 'package:drift/drift.dart';
-
 // Таблицы SQLite (Drift). Строки таблиц — классы *Row (UserRow, TaskRow…);
 // в Domain они превращаются в сущности через мапперы в src/data/mapper.
 
-import '../../src/domain/entities/enums.dart';
+import 'package:drift/drift.dart';
+
+import 'package:lab11/models/enums.dart';
 
 /// users — пользователи. Email уникален.
 @TableIndex(name: 'idx_users_name', columns: {#name})

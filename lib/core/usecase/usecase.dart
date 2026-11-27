@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:fpdart/fpdart.dart' hide Task;
 
-import '../error/failures.dart';
+import 'package:lab11/core/error/failures.dart';
 
 /// Базовый UseCase: одно бизнес-действие, результат — `Either<Failure, T>`.
 abstract class UseCase<T, P> {

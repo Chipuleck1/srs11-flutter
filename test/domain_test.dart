@@ -1,13 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
+
 import 'package:lab11/core/di/injection.dart';
 import 'package:lab11/core/error/failures.dart';
 import 'package:lab11/core/usecase/usecase.dart';
-import 'package:lab11/src/domain/entities/entities.dart';
-import 'package:lab11/src/domain/usecases/app_usecases.dart';
-import 'package:lab11/src/domain/usecases/comment_usecases.dart';
-import 'package:lab11/src/domain/usecases/project_usecases.dart';
-import 'package:lab11/src/domain/usecases/task_usecases.dart';
-import 'package:lab11/src/domain/usecases/user_usecases.dart';
+import 'package:lab11/models/enums.dart';
+import 'package:lab11/src/dashboard/domain/usecases/watch_dashboard_usecase.dart';
+import 'package:lab11/src/projects/domain/usecases/project_usecases.dart';
+import 'package:lab11/src/tasks/domain/entities/task.dart';
+import 'package:lab11/src/tasks/domain/usecases/comment_usecases.dart';
+import 'package:lab11/src/tasks/domain/usecases/task_usecases.dart';
+import 'package:lab11/src/trash/domain/usecases/trash_usecases.dart';
+import 'package:lab11/src/users/domain/usecases/user_usecases.dart';
 
 import 'helpers.dart';
 

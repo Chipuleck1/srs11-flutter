@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../src/domain/entities/enums.dart';
+import 'package:lab11/models/enums.dart';
 
 /// Палитра TaskFlow: чёрный фон и красные акценты.
 abstract final class Tf {

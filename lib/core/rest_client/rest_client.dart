@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
-import '../error/exceptions.dart';
+import 'package:lab11/core/error/exceptions.dart';
 
 /// Единый HTTP-клиент. Знает базовый URL, таймауты и превращает
 /// ошибки Dio в исключения Data Layer (NetworkException, ServerException…).

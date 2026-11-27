@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'constants/app_theme.dart';
-import 'core/di/injection.dart';
-import 'src/presentation/bloc/cubits.dart';
-import 'src/presentation/pages/home_page.dart';
+import 'package:lab11/constants/app_theme.dart';
+import 'package:lab11/core/di/injection.dart';
+import 'package:lab11/src/home/presentation/bloc/current_user_cubit.dart';
+import 'package:lab11/src/home/presentation/pages/home_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
